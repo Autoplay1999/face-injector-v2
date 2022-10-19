@@ -25,18 +25,18 @@ std::wstring to_fast_convert_wchar(PCCH a)
 {
 	std::wstring out_str;
 
-	for (int i = 0; i < strlen(a) + 1; i++)
+	for (size_t i = 0; i < strlen(a) + 1; i++)
 		out_str.push_back((const wchar_t)a[i]);
 
 	return out_str;
 }
 
-DWORD get_process_id_and_thread_id_by_window_class(LPCSTR window_class_name, PDWORD p_thread_id)
+DWORD get_process_id_and_thread_id_by_window_class(LPCSTR window_class_name, LPCSTR window_title_anme, PDWORD p_thread_id)
 {
 	DWORD process_id = 0;
 	while (!process_id)
 	{
-		*p_thread_id = GetWindowThreadProcessId(FindWindow(window_class_name, NULL), &process_id); Sleep(20);
+		*p_thread_id = GetWindowThreadProcessId(FindWindowA(window_class_name, window_title_anme), &process_id); Sleep(20);
 	} return process_id;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

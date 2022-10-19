@@ -1,6 +1,6 @@
 #pragma once
 
-void start_driver()
+bool start_driver()
 {
 	driver().handle_driver();
 
@@ -11,6 +11,14 @@ void start_driver()
 	}
 
 	driver().handle_driver();
-	driver().is_loaded() ? cout << xor_a("driver initialized!") << endl : cout << xor_a("driver initialize error =<") << endl;
+
+	if (!driver().is_loaded()) {
+		cout << xor_a("driver initialize error =<") << endl;
+		return false;
+	}
+
+	cout << xor_a("driver initialized!") << endl;
+
+	return true;
 }
 

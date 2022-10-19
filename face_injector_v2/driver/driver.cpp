@@ -67,13 +67,13 @@ NTSTATUS c_driver::protect_memory_ex(uint64_t base, uint64_t size, PDWORD protec
 	req.pid = process_id;
 	req.address = base;
 	req.size = size;
-	req.new_protect = protection;
+	req.new_protect = (ULONGLONG)protection;
 
 	return send_serivce(ioctl_protect_memory, &req, sizeof(req));
 }
 PVOID c_driver::alloc_memory_ex(DWORD size, DWORD protect)
 {
-	PVOID p_out_address = NULL;
+	ULONGLONG p_out_address = NULL;
 	alloc_memory req = { 0 };
 
 	req.pid = process_id;
@@ -83,7 +83,7 @@ PVOID c_driver::alloc_memory_ex(DWORD size, DWORD protect)
 
 	send_serivce(ioctl_alloc_memory, &req, sizeof(req));
 
-	return p_out_address;
+	return (PVOID)p_out_address;
 }
 NTSTATUS c_driver::free_memory_ex(PVOID address)
 {

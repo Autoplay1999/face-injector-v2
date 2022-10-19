@@ -2,6 +2,7 @@
 #include "utils.h"
 
 /////////////////////////////////
+#ifdef _WIN64
 BYTE remote_load_library[96] = 
 {
 	0x48, 0x83, 0xEC, 0x38, 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x89, 0x44, 0x24, 0x20, 0x48, 0x8B, 0x44, 0x24, 0x20,
@@ -17,6 +18,23 @@ BYTE remote_call_dll_main[92] =
 	0x8B, 0x40, 0x08, 0x48, 0x89, 0x44, 0x24, 0x28, 0x45, 0x33, 0xC0, 0xBA, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x44, 0x24, 0x20, 0x48, 0x8B,
 	0x48, 0x10, 0xFF, 0x54, 0x24, 0x28, 0x48, 0x8B, 0x44, 0x24, 0x20, 0xC7, 0x00, 0x02, 0x00, 0x00, 0x00, 0x48, 0x83, 0xC4, 0x38, 0xC3, 0xCC
 }; DWORD shell_data_offset = 0x6;
+#else
+BYTE remote_load_library[36] =
+{
+	0x55, 0x8B, 0xEC, 0x56, 0xBE, 0x00, 0x00, 0x00, 0x00, 
+	0x83, 0x3E, 0x00, 0x75, 0x0E, 0xFF, 0x06, 0x8D, 0x46, 
+	0x0C, 0x50, 0xFF, 0x56, 0x04, 0x89, 0x46, 0x08, 0xFF, 
+	0x06, 0x31, 0xC0, 0x5E, 0x5D, 0xC2, 0x0C, 0x00, 0xCC
+};
+
+BYTE remote_call_dll_main[36] =
+{
+	0x55, 0x8B, 0xEC, 0x56, 0xBE, 0x00, 0x00, 0x00, 0x00, 
+	0x83, 0x3E, 0x00, 0x75, 0x0E, 0xFF, 0x06, 0x6A, 0x00, 
+	0x6A, 0x01, 0xFF, 0x76, 0x08, 0xFF, 0x56, 0x04, 0xFF, 
+	0x06, 0x31, 0xC0, 0x5E, 0x5D, 0xC2, 0x0C, 0x00, 0xCC
+}; DWORD shell_data_offset = 0x5;
+#endif
 /////////////////////////////////
 
 /////////////////////////////////
@@ -248,73 +266,81 @@ void erase_discardable_sect(PVOID p_module_base, PIMAGE_NT_HEADERS nt_head)
 /////////////////////////////////
 
 /////////////////////////////////
-void face_injecor_v2(LPCSTR window_class_name, LPCWSTR dll_path)
+bool face_injecor_v2(LPCSTR window_class_name, LPCSTR window_title_name, LPCWSTR dll_path)
 {
 	// get dll file
 	PVOID dll_image = get_dll_by_file(dll_path);
-	if (!dll_image)
+
+	if (!dll_image) {
 		printf(xor_a("invalid dll\n"));
+		return false;
+	}
 
 	// parse nt header
 	PIMAGE_NT_HEADERS dll_nt_head = RtlImageNtHeader(dll_image);
-	if (!dll_nt_head)
+
+	if (!dll_nt_head) {
 		printf(xor_a("pe: invalid pe header\n"));
+		return false;
+	}
 
 	// get process id & thread id
 	DWORD thread_id;
-	DWORD process_id = get_process_id_and_thread_id_by_window_class(window_class_name, &thread_id);
+	DWORD process_id = get_process_id_and_thread_id_by_window_class(window_class_name, window_title_name, &thread_id);
 
 	cout << xor_a("process_id: 0x") << hex << process_id << endl;
 	cout << xor_a("thread_id: 0x") << hex << thread_id << endl;
 
-	if (process_id != 0 && thread_id != 0)
-	{		
-		// attach target process
-		driver().attach_process(process_id);
-		
-		PVOID allocate_base = driver().alloc_memory_ex(dll_nt_head->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE);
-		cout << xor_a("allocate_base: 0x") << hex << allocate_base << endl;
-
-		// fix reloc
-		if (!relocate_image(allocate_base, dll_image, dll_nt_head))
-		{
-			driver().free_memory_ex(allocate_base);
-			printf(xor_a("reloc failed\n"));
-		}
-
-		printf(xor_a("relocate image success!\n"));
-
-		// fix iat
-		if (!resolve_import(thread_id, dll_image, dll_nt_head))
-		{
-			driver().free_memory_ex(allocate_base);
-			printf(xor_a("import failed\n"));
-		}
-
-		printf(xor_a("resolve import success!\n"));
-
-		// write dll section's
-		write_sections(allocate_base, dll_image, dll_nt_head);
-
-		printf(xor_a("write sections success!\n"));
-
-		// call dll main
-		call_dll_main(thread_id, allocate_base, dll_nt_head, false);
-
-		printf(xor_a("call dll main success!\n"));
-
-		// cleanup
-		erase_discardable_sect(allocate_base, dll_nt_head);
-		VirtualFree(dll_image, 0, MEM_RELEASE);
-
-		printf(xor_a("cleanup success!\n"));
-		printf(xor_a("inject success!\n"));
-		cout << endl;
-	}
-	else
-	{
+	if (process_id == 0 || thread_id == 0) {
 		printf(xor_a("process not found!\n"));
+		return false;
 	}
+
+	// attach target process
+	driver().attach_process(process_id);
+		
+	PVOID allocate_base = driver().alloc_memory_ex(dll_nt_head->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE);
+	cout << xor_a("allocate_base: 0x") << hex << allocate_base << endl;
+
+	// fix reloc
+	if (!relocate_image(allocate_base, dll_image, dll_nt_head))
+	{
+		driver().free_memory_ex(allocate_base);
+		printf(xor_a("reloc failed\n"));
+		return false;
+	}
+
+	printf(xor_a("relocate image success!\n"));
+
+	// fix iat
+	if (!resolve_import(thread_id, dll_image, dll_nt_head))
+	{
+		driver().free_memory_ex(allocate_base);
+		printf(xor_a("import failed\n"));
+		return false;
+	}
+
+	printf(xor_a("resolve import success!\n"));
+
+	// write dll section's
+	write_sections(allocate_base, dll_image, dll_nt_head);
+
+	printf(xor_a("write sections success!\n"));
+
+	// call dll main
+	call_dll_main(thread_id, allocate_base, dll_nt_head, false);
+
+	printf(xor_a("call dll main success!\n"));
+
+	// cleanup
+	erase_discardable_sect(allocate_base, dll_nt_head);
+	VirtualFree(dll_image, 0, MEM_RELEASE);
+
+	printf(xor_a("cleanup success!\n"));
+	printf(xor_a("inject success!\n"));
+	cout << endl;
+
+	return true;
 }
 /////////////////////////////////
 

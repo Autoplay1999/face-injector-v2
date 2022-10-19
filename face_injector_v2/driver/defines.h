@@ -40,7 +40,7 @@ typedef struct _protect_memory
 	ULONG pid;
 	ULONGLONG address;
 	ULONGLONG size;
-	PDWORD new_protect;
+	ULONGLONG new_protect;
 } protect_memory, *pprotect_memory;
 
 typedef struct _alloc_memory

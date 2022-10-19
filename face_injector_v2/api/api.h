@@ -5,7 +5,7 @@
 
 string random_string()
 {
-	srand((unsigned int)time((time_t)0));
+	srand((unsigned int)time(0));
 	string str = xor_a("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
 	string newstr;
 	int pos;
@@ -19,7 +19,7 @@ string random_string()
 
 wstring random_string_w()
 {
-	srand((unsigned int)time((time_t)0));
+	srand((unsigned int)time(0));
 	wstring str = xor_w(L"QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
 	wstring newstr;
 	int pos;
