@@ -106,12 +106,17 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 	// This structure specifies the STDERR and STDOUT handles for redirection.
 	ZeroMemory(&siStartInfo, sizeof(STARTUPINFOW));
 	siStartInfo.cb = sizeof(STARTUPINFOW);
+	siStartInfo.hStdError = NULL;
+	siStartInfo.hStdOutput = NULL;
+	siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 	siStartInfo.wShowWindow = SW_HIDE;
+
+	auto fcmd = L"\""s + FileName + L"\" "s + Command;
 
 	// Create the child process.
 	auto createProcRes = CreateProcessW(
-		FileName.c_str(),                  // program name
-		(LPWSTR)Command.c_str(),           // command line
+		NULL,                              // program name
+		(LPWSTR)fcmd.c_str(),              // command line
 		NULL,                              // process security attributes
 		NULL,                              // primary thread security attributes
 		TRUE,                              // handles are inherited
@@ -131,8 +136,8 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 		NtWaitForSingleObject(piProcInfo.hProcess, FALSE, &waitTime);
 	}
 
-	auto delProcess = shared_ptr<void>(piProcInfo.hProcess, NtClose);
-	auto delThread = shared_ptr<void>(piProcInfo.hThread, NtClose);
+	NtClose(piProcInfo.hThread);
+	NtClose(piProcInfo.hProcess);
 
 	return true;
 }
@@ -191,6 +196,7 @@ wstring get_files_path()
 
 bool mmap_driver()
 {
+	bool result{};
 	wstring sz_driver = get_random_file_name_directory(xor_w(L".sys"));
 	wstring sz_mapper = get_random_file_name_directory(xor_w(L".exe"));
 	wstring sz_params_map = xor_w(L"-map ") + sz_driver;
@@ -198,16 +204,23 @@ bool mmap_driver()
 	DeleteFileW(sz_driver.c_str());
 	DeleteFileW(sz_mapper.c_str());
 
-	if (!drop_driver(sz_driver))
-		return false;
+	while (true) {
+		if (!drop_driver(sz_driver))
+			break;
 
-	if (!drop_mapper(sz_mapper))
-		return false;
+		if (!drop_mapper(sz_mapper))
+			break;
 
-	create_process(sz_mapper, sz_params_map);
+		if (!create_process(sz_mapper, sz_params_map))
+			break;
+
+		result = true;
+		break;
+	}
 
 	DeleteFileW(sz_driver.c_str());
 	DeleteFileW(sz_mapper.c_str());
-	return true;
+
+	return result;
 }
 

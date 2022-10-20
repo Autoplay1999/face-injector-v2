@@ -178,6 +178,11 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\kankoshev_driver\kankoshev_driver.vcxproj">
+      <Project>{dc6dfc48-3dfe-4c4f-b489-26f1bc376552}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
