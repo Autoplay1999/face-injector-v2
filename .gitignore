@@ -366,3 +366,5 @@ FodyWeavers.xsd
 
 # Implementation
 Bin/*
+Include/*
+Lib/*

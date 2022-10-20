@@ -7,9 +7,6 @@
     <Filter Include="define">
       <UniqueIdentifier>{6cd4550f-57b9-4e67-93ea-c50e7e160389}</UniqueIdentifier>
     </Filter>
-    <Filter Include="driver">
-      <UniqueIdentifier>{cba38fdc-d3f0-4d79-912e-2a3ca2db764e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="inject">
       <UniqueIdentifier>{f22c3326-6a1a-41d6-9185-5153a28031c8}</UniqueIdentifier>
     </Filter>
@@ -19,18 +16,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="api\api.h">
-      <Filter>api</Filter>
-    </ClInclude>
-    <ClInclude Include="api\drvutils.h">
-      <Filter>api</Filter>
-    </ClInclude>
-    <ClInclude Include="api\shellcode.h">
-      <Filter>api</Filter>
-    </ClInclude>
-    <ClInclude Include="api\utilit.h">
-      <Filter>api</Filter>
-    </ClInclude>
     <ClInclude Include="define\stdafx.h">
       <Filter>define</Filter>
     </ClInclude>
@@ -40,20 +25,11 @@
     <ClInclude Include="inject\utils.h">
       <Filter>inject</Filter>
     </ClInclude>
-    <ClInclude Include="driver\defines.h">
-      <Filter>driver</Filter>
-    </ClInclude>
-    <ClInclude Include="driver\driver.h">
-      <Filter>driver</Filter>
-    </ClInclude>
     <ClInclude Include="api\xor.h">
       <Filter>api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="driver\driver.cpp">
-      <Filter>driver</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>source file</Filter>
     </ClCompile>

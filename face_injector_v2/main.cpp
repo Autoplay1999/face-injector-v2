@@ -1,12 +1,30 @@
 #include "define/stdafx.h"
+#include <kankoshev/driver.hpp>
 #include "api/xor.h"
-#include "api/api.h"
-#include "driver/driver.h"
 #include "inject/injector.h"
-#include "api/drvutils.h"
 
-int main()
-{
+bool start_driver() {
+	auto& drv = kankoshev::Driver::GetInstance();
+
+	if (!drv.AttachDriver()) {
+		cout << xor_a("driver initialize...") << endl;
+		
+		if (!drv.DriverInitialize()) {
+			cout << xor_a("driver initialize error =<") << endl;
+			return false;
+		}
+	}
+
+	if (!drv.AttachDriver()) {
+		cout << xor_a("driver initialize error =<") << endl;
+		return false;
+	}
+
+	cout << xor_a("driver initialized!") << endl;
+	return true;
+}
+
+int main() {
 	// driver init
 	if (!start_driver()) {
 		system("pause");

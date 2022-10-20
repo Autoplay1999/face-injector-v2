@@ -57,12 +57,14 @@ typedef struct _main_struct
 /////////////////////////////////
 uintptr_t call_remote_load_library(DWORD thread_id, LPCSTR dll_name)
 {
+	auto& drv = kankoshev::Driver::GetInstance();
+
 	/////////////////////////////////
 	HMODULE nt_dll = LoadLibraryW(xor_w(L"ntdll.dll"));
 	/////////////////////////////////
 
 	/////////////////////////////////
-	PVOID alloc_shell_code = driver().alloc_memory_ex(4096, PAGE_EXECUTE_READWRITE);
+	PVOID alloc_shell_code = drv.AllocMemoryEx(4096, PAGE_EXECUTE_READWRITE);
 	DWORD shell_size = sizeof(remote_load_library) + sizeof(load_library_struct);
 	PVOID alloc_local = VirtualAlloc(NULL, shell_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	/////////////////////////////////
@@ -77,7 +79,7 @@ uintptr_t call_remote_load_library(DWORD thread_id, LPCSTR dll_name)
 	/////////////////////////////////
 
 	/////////////////////////////////
-	driver().write_memory_ex(alloc_shell_code, alloc_local, shell_size);
+	drv.WriteMemoryEx(alloc_shell_code, alloc_local, shell_size);
 	HHOOK h_hook = SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)alloc_shell_code, nt_dll, thread_id);
 	/////////////////////////////////
 
@@ -85,14 +87,14 @@ uintptr_t call_remote_load_library(DWORD thread_id, LPCSTR dll_name)
 	while (ll_data->status != 2) 
 	{
 		PostThreadMessage(thread_id, WM_NULL, 0, 0);
-		driver().read_memory_ex((PVOID)shell_data, (PVOID)ll_data, sizeof(load_library_struct));
+		drv.ReadMemoryEx((PVOID)shell_data, (PVOID)ll_data, sizeof(load_library_struct));
 		Sleep(10);
 	} uintptr_t mod_base = ll_data->module_base;
 	/////////////////////////////////
 
 	/////////////////////////////////
 	UnhookWindowsHookEx(h_hook);
-	driver().free_memory_ex(alloc_shell_code);
+	drv.FreeMemoryEx(alloc_shell_code);
 	VirtualFree(alloc_local, 0, MEM_RELEASE);
 	/////////////////////////////////
 
@@ -103,12 +105,14 @@ uintptr_t call_remote_load_library(DWORD thread_id, LPCSTR dll_name)
 /////////////////////////////////
 void call_dll_main(DWORD thread_id, PVOID dll_base, PIMAGE_NT_HEADERS nt_header, bool hide_dll)
 {
+	auto& drv = kankoshev::Driver::GetInstance();
+
 	/////////////////////////////////
 	HMODULE nt_dll = LoadLibraryW(xor_w(L"ntdll.dll"));
 	/////////////////////////////////
 
 	/////////////////////////////////
-	PVOID alloc_shell_code = driver().alloc_memory_ex(4096, PAGE_EXECUTE_READWRITE);
+	PVOID alloc_shell_code = drv.AllocMemoryEx(4096, PAGE_EXECUTE_READWRITE);
 	DWORD shell_size = sizeof(remote_call_dll_main) + sizeof(main_struct);
 	PVOID alloc_local = VirtualAlloc(NULL, shell_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	/////////////////////////////////
@@ -123,7 +127,7 @@ void call_dll_main(DWORD thread_id, PVOID dll_base, PIMAGE_NT_HEADERS nt_header,
 	/////////////////////////////////
 
 	/////////////////////////////////
-	driver().write_memory_ex(alloc_shell_code, alloc_local, shell_size);
+	drv.WriteMemoryEx(alloc_shell_code, alloc_local, shell_size);
 	HHOOK h_hook = SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)alloc_shell_code, nt_dll, thread_id);
 	/////////////////////////////////
 
@@ -131,14 +135,14 @@ void call_dll_main(DWORD thread_id, PVOID dll_base, PIMAGE_NT_HEADERS nt_header,
 	while (main_data->status != 2)
 	{
 		PostThreadMessage(thread_id, WM_NULL, 0, 0);
-		driver().read_memory_ex((PVOID)shell_data, (PVOID)main_data, sizeof(main_struct));
+		drv.ReadMemoryEx((PVOID)shell_data, (PVOID)main_data, sizeof(main_struct));
 		Sleep(10);
 	}
 	/////////////////////////////////
 
 	/////////////////////////////////
 	UnhookWindowsHookEx(h_hook);
-	driver().free_memory_ex(alloc_shell_code);
+	drv.FreeMemoryEx(alloc_shell_code);
 	VirtualFree(alloc_local, 0, MEM_RELEASE);
 	/////////////////////////////////
 }
@@ -240,16 +244,20 @@ BOOL resolve_import(DWORD thread_id, PVOID p_local_img, PIMAGE_NT_HEADERS nt_hea
 
 void write_sections(PVOID p_module_base, PVOID local_image, PIMAGE_NT_HEADERS nt_head)
 {
+	auto& drv = kankoshev::Driver::GetInstance();
 	PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nt_head);
+
 	for (WORD sec_cnt = 0; sec_cnt < nt_head->FileHeader.NumberOfSections; sec_cnt++, section++)
 	{
-		driver().write_memory_ex((PVOID)((uintptr_t)p_module_base + section->VirtualAddress), (PVOID)((uintptr_t)local_image + section->PointerToRawData), section->SizeOfRawData);
+		drv.WriteMemoryEx((PVOID)((uintptr_t)p_module_base + section->VirtualAddress), (PVOID)((uintptr_t)local_image + section->PointerToRawData), section->SizeOfRawData);
 	}
 }
 
 void erase_discardable_sect(PVOID p_module_base, PIMAGE_NT_HEADERS nt_head)
 {
+	auto& drv = kankoshev::Driver::GetInstance();
 	PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(nt_head);
+
 	for (WORD sec_cnt = 0; sec_cnt < nt_head->FileHeader.NumberOfSections; sec_cnt++, section++)
 	{
 		if (section->SizeOfRawData == 0)
@@ -258,7 +266,7 @@ void erase_discardable_sect(PVOID p_module_base, PIMAGE_NT_HEADERS nt_head)
 		if (section->Characteristics & IMAGE_SCN_MEM_DISCARDABLE)
 		{
 			PVOID zero_memory = VirtualAlloc(NULL, section->SizeOfRawData, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-			driver().write_memory_ex((PVOID)((uintptr_t)p_module_base + section->VirtualAddress), zero_memory, section->SizeOfRawData);
+			drv.WriteMemoryEx((PVOID)((uintptr_t)p_module_base + section->VirtualAddress), zero_memory, section->SizeOfRawData);
 			VirtualFree(zero_memory, 0, MEM_RELEASE);
 		}
 	}
@@ -268,6 +276,8 @@ void erase_discardable_sect(PVOID p_module_base, PIMAGE_NT_HEADERS nt_head)
 /////////////////////////////////
 bool face_injecor_v2(LPCSTR window_class_name, LPCSTR window_title_name, LPCWSTR dll_path)
 {
+	auto& drv = kankoshev::Driver::GetInstance();
+
 	// get dll file
 	PVOID dll_image = get_dll_by_file(dll_path);
 
@@ -297,15 +307,15 @@ bool face_injecor_v2(LPCSTR window_class_name, LPCSTR window_title_name, LPCWSTR
 	}
 
 	// attach target process
-	driver().attach_process(process_id);
+	drv.AttachProcess(process_id);
 		
-	PVOID allocate_base = driver().alloc_memory_ex(dll_nt_head->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE);
+	PVOID allocate_base = drv.AllocMemoryEx(dll_nt_head->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE);
 	cout << xor_a("allocate_base: 0x") << hex << allocate_base << endl;
 
 	// fix reloc
 	if (!relocate_image(allocate_base, dll_image, dll_nt_head))
 	{
-		driver().free_memory_ex(allocate_base);
+		drv.FreeMemoryEx(allocate_base);
 		printf(xor_a("reloc failed\n"));
 		return false;
 	}
@@ -315,7 +325,7 @@ bool face_injecor_v2(LPCSTR window_class_name, LPCSTR window_title_name, LPCWSTR
 	// fix iat
 	if (!resolve_import(thread_id, dll_image, dll_nt_head))
 	{
-		driver().free_memory_ex(allocate_base);
+		drv.FreeMemoryEx(allocate_base);
 		printf(xor_a("import failed\n"));
 		return false;
 	}

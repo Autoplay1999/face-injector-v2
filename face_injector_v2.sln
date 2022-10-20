@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1209
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32929.386
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "face_injector_v2", "face_injector_v2\face_injector_v2.vcxproj", "{A0EDD2AC-09C4-46E4-88D7-9B369952317C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kankoshev_driver", "kankoshev_driver\kankoshev_driver.vcxproj", "{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{A0EDD2AC-09C4-46E4-88D7-9B369952317C}.Release|x64.Build.0 = Release|x64
 		{A0EDD2AC-09C4-46E4-88D7-9B369952317C}.Release|x86.ActiveCfg = Release|Win32
 		{A0EDD2AC-09C4-46E4-88D7-9B369952317C}.Release|x86.Build.0 = Release|Win32
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Debug|x64.ActiveCfg = Debug|x64
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Debug|x64.Build.0 = Debug|x64
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Debug|x86.ActiveCfg = Debug|Win32
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Debug|x86.Build.0 = Debug|Win32
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Release|x64.ActiveCfg = Release|x64
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Release|x64.Build.0 = Release|x64
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Release|x86.ActiveCfg = Release|Win32
+		{DC6DFC48-3DFE-4C4F-B489-26F1BC376552}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
