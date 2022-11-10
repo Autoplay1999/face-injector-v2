@@ -22,7 +22,7 @@ namespace kankoshev {
     }
 
     NTSTATUS Driver::SendSerivce(ULONG ioctl_code, LPVOID io, DWORD size) {
-        if (mDriverHandle == INVALID_HANDLE_VALUE)
+        if (!IsLoaded())
             return STATUS_DEVICE_DOES_NOT_EXIST;
 
         if (!DeviceIoControl(mDriverHandle, ioctl_code, io, size, nullptr, 0, NULL, NULL))
@@ -107,9 +107,23 @@ namespace kankoshev {
     }
 
     bool Driver::AttachDriver() {
+        DetachDriver();
+
         mDriverHandle = CreateFileW(DVR_DEVICE_FILE, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
-        return IsLoaded();
+        if (!IsLoaded()) {
+            mDriverHandle = NULL;
+            return false;
+        }
+
+        return true;
+    }
+
+    void Driver::DetachDriver() {
+        if (IsLoaded()) {
+            NtClose(mDriverHandle);
+            mDriverHandle = NULL;
+        }
     }
 
     Driver& Driver::GetInstance() {

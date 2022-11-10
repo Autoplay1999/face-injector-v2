@@ -25,7 +25,7 @@ string random_string()
 {
 	string str = xor_a("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
 	string newstr;
-	int pos;
+	size_t pos;
 	while (newstr.size() != 32)
 	{
 		pos = ((random_number() % (str.size() + 1)));
@@ -38,7 +38,7 @@ wstring random_string_w()
 {
 	wstring str = xor_w(L"QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
 	wstring newstr;
-	int pos;
+	size_t pos;
 	while (newstr.size() != 5)
 	{
 		pos = ((random_number() % (str.size() + 1)));

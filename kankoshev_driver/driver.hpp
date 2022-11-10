@@ -27,6 +27,7 @@ namespace kankoshev {
     public:
         bool DriverInitialize();
         bool AttachDriver();
+        void DetachDriver();
         void AttachProcess(DWORD pid);
 
         NTSTATUS GetModuleInformationEx(PCWSTR name, PGET_MODULE_INFORMATION mod);
