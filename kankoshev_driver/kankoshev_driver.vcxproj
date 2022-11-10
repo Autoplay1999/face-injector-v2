@@ -188,6 +188,7 @@
     <ClInclude Include="shellcode.h" />
     <ClInclude Include="api.h" />
     <ClInclude Include="xor.h" />
+    <ClInclude Include="xorstr.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driver.cpp" />
