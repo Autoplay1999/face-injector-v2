@@ -6,8 +6,12 @@
 #define DVR_DEVICE_FILE xor_w(L"\\\\.\\EIQDV") 
 
 namespace kankoshev {
+    namespace driver {
+        Driver* gDriver;
+    }
+
     Driver::Driver() : mDriverHandle(INVALID_HANDLE_VALUE), mProcessId() {
-    /**/
+        driver::gDriver = this;
     }
 
     Driver::~Driver() {

@@ -30,9 +30,6 @@
     <ClInclude Include="shellcode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="xor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
