@@ -58,41 +58,41 @@ namespace kankoshev {
 
         inline bool IsLoaded() const { return mDriverHandle != INVALID_HANDLE_VALUE && mDriverHandle != 0; }
 
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> T Read(T2 base) {
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> T Read(T2 base) {
             static T out;
-            ReadMemoryEx((PVOID)(ULONG_PTR)base, &out, sizeof T);
+            ReadMemoryEx((PVOID)(DWORD_PTR)base, &out, sizeof T);
             return out;
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool Read(T2 base, T& buffer) {
-            return NT_SUCCESS(ReadMemoryEx((PVOID)(ULONG_PTR)base, &buffer, sizeof T));
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool Read(T2 base, T& buffer) {
+            return NT_SUCCESS(ReadMemoryEx((PVOID)(DWORD_PTR)base, &buffer, sizeof T));
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool Write(T2 base, const T& buffer) {
-            return NT_SUCCESS(WriteMemoryEx((PVOID)(ULONG_PTR)base, (PVOID)&buffer, sizeof T));
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool Write(T2 base, const T& buffer) {
+            return NT_SUCCESS(WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)&buffer, sizeof T));
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool WriteProtect(T2 base, const T& buffer) {
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool WriteProtect(T2 base, const T& buffer) {
             DWORD origProtect = PAGE_EXECUTE_READWRITE;
 
-            if (!NT_SUCCESS(ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect)))
+            if (!NT_SUCCESS(ProtectMemoryEx((PVOID)(DWORD_PTR)base, sizeof T, &origProtect)))
                 return false;
 
-            auto res = NT_SUCCESS(WriteMemoryEx((PVOID)(ULONG_PTR)base, (PVOID)&buffer, sizeof T));
-            ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect);
+            auto res = NT_SUCCESS(WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)&buffer, sizeof T));
+            ProtectMemoryEx((PVOID)(DWORD_PTR)base, sizeof T, &origProtect);
             return res;
         }
-        template<typename T = ULONG_PTR> bool Read_(T base, PVOID buffer, DWORD size) {
-            return NT_SUCCESS(ReadMemoryEx((PVOID)(ULONG_PTR)base, buffer, size));
+        template<typename T = DWORD_PTR> bool Read_(T base, const void* buffer, DWORD_PTR size) {
+            return NT_SUCCESS(ReadMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
         }
-        template<typename T = ULONG_PTR> bool Write_(T base, PVOID buffer, DWORD size) {
-            return NT_SUCCESS(WriteMemoryEx((PVOID)(ULONG_PTR)base, buffer, size));
+        template<typename T = DWORD_PTR> bool Write_(T base, const void* buffer, DWORD_PTR size) {
+            return NT_SUCCESS(WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
         }
-        template<typename T = ULONG_PTR> bool WriteProtect_(T base, PVOID buffer, DWORD size) {
+        template<typename T = DWORD_PTR> bool WriteProtect_(T base, const void* buffer, DWORD_PTR size) {
             DWORD origProtect = PAGE_EXECUTE_READWRITE;
 
-            if (!NT_SUCCESS(ProtectMemoryEx((PVOID)(ULONG_PTR)base, size, &origProtect)))
+            if (!NT_SUCCESS(ProtectMemoryEx((PVOID)(DWORD_PTR)base, size, &origProtect)))
                 return false;
 
-            auto res = NT_SUCCESS(WriteMemoryEx((PVOID)(ULONG_PTR)base, &buffer, size));
-            ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect);
+            auto res = NT_SUCCESS(WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
+            ProtectMemoryEx((PVOID)(DWORD_PTR)base, size, &origProtect);
             return res;
         }
 
@@ -107,43 +107,43 @@ namespace kankoshev {
     namespace driver {
         extern Driver* gDriver;
 
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> T Read(T2 base) {
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> T Read(T2 base) {
             static T out;
-            gDriver->ReadMemoryEx((PVOID)(ULONG_PTR)base, &out, sizeof T);
+            gDriver->ReadMemoryEx((PVOID)(DWORD_PTR)base, &out, sizeof T);
             return out;
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool Read(T2 base, T& buffer) {
-            return NT_SUCCESS(gDriver->ReadMemoryEx((PVOID)(ULONG_PTR)base, &buffer, sizeof T));
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool Read(T2 base, T& buffer) {
+            return NT_SUCCESS(gDriver->ReadMemoryEx((PVOID)(DWORD_PTR)base, &buffer, sizeof T));
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool Write(T2 base, const T& buffer) {
-            return NT_SUCCESS(gDriver->WriteMemoryEx((PVOID)(ULONG_PTR)base, (PVOID)&buffer, sizeof T));
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool Write(T2 base, const T& buffer) {
+            return NT_SUCCESS(gDriver->WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)&buffer, sizeof T));
         }
-        template<typename T = ULONG_PTR, typename T2 = ULONG_PTR> bool WriteProtect(T2 base, const T& buffer) {
+        template<typename T = DWORD_PTR, typename T2 = DWORD_PTR> bool WriteProtect(T2 base, const T& buffer) {
             auto& drv = *gDriver;
             DWORD origProtect = PAGE_EXECUTE_READWRITE;
 
-            if (!NT_SUCCESS(drv.ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect)))
+            if (!NT_SUCCESS(drv.ProtectMemoryEx((PVOID)(DWORD_PTR)base, sizeof T, &origProtect)))
                 return false;
 
-            auto res = NT_SUCCESS(drv.WriteMemoryEx((PVOID)(ULONG_PTR)base, (PVOID)&buffer, sizeof T));
-            drv.ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect);
+            auto res = NT_SUCCESS(drv.WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)&buffer, sizeof T));
+            drv.ProtectMemoryEx((PVOID)(DWORD_PTR)base, sizeof T, &origProtect);
             return res;
         }
-        template<typename T = ULONG_PTR> bool Read_(T base, PVOID buffer, DWORD size) {
-            return NT_SUCCESS(gDriver->ReadMemoryEx((PVOID)(ULONG_PTR)base, buffer, size));
+        template<typename T = DWORD_PTR> bool Read_(T base, const void* buffer, DWORD_PTR size) {
+            return NT_SUCCESS(gDriver->ReadMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
         }
-        template<typename T = ULONG_PTR> bool Write_(T base, PVOID buffer, DWORD size) {
-            return NT_SUCCESS(gDriver->WriteMemoryEx((PVOID)(ULONG_PTR)base, buffer, size));
+        template<typename T = DWORD_PTR> bool Write_(T base, const void* buffer, DWORD_PTR size) {
+            return NT_SUCCESS(gDriver->WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
         }
-        template<typename T = ULONG_PTR> bool WriteProtect_(T base, PVOID buffer, DWORD size) {
+        template<typename T = DWORD_PTR> bool WriteProtect_(T base, const void* buffer, DWORD_PTR size) {
             auto& drv = *gDriver;
             DWORD origProtect = PAGE_EXECUTE_READWRITE;
 
-            if (!NT_SUCCESS(drv.ProtectMemoryEx((PVOID)(ULONG_PTR)base, size, &origProtect)))
+            if (!NT_SUCCESS(drv.ProtectMemoryEx((PVOID)(DWORD_PTR)base, size, &origProtect)))
                 return false;
 
-            auto res = NT_SUCCESS(drv.WriteMemoryEx((PVOID)(ULONG_PTR)base, &buffer, size));
-            drv.ProtectMemoryEx((PVOID)(ULONG_PTR)base, sizeof T, &origProtect);
+            auto res = NT_SUCCESS(drv.WriteMemoryEx((PVOID)(DWORD_PTR)base, (PVOID)buffer, size));
+            drv.ProtectMemoryEx((PVOID)(DWORD_PTR)base, size, &origProtect);
             return res;
         }
     }
