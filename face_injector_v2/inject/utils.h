@@ -73,7 +73,7 @@ string get_process_name_by_pid(DWORD process_id)
 	processInfo.dwSize = sizeof(processInfo);
 	HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (processesSnapshot == INVALID_HANDLE_VALUE)
-		return 0;
+		return {};
 
 	for (BOOL bok = Process32First(processesSnapshot, &processInfo); bok; bok = Process32Next(processesSnapshot, &processInfo))
 	{

@@ -150,7 +150,6 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 	return true;
 }
 
-
 bool drop_mapper(filesystem::path path) {
 	ofstream f(path, std::ios::binary);
 	if (!f.is_open())
@@ -212,6 +211,137 @@ bool drop_driver(wstring path)
 	return true;
 }
 
+bool SetPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege) {
+	TOKEN_PRIVILEGES tp;
+	LUID luid;
+
+	if (!LookupPrivilegeValue(
+		NULL,            // lookup privilege on local system
+		lpszPrivilege,   // privilege to lookup 
+		&luid)) {        // receives LUID of privilege
+		// std::cout << "LookupPrivilegeValue error: " << GetLastError() << '\n';
+		return false;
+	}
+
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+	tp.Privileges[0].Attributes = (bEnablePrivilege) ? SE_PRIVILEGE_ENABLED : 0;
+
+	// Enable the privilege or disable all privileges.
+	if (!AdjustTokenPrivileges(
+		hToken,
+		FALSE,
+		&tp,
+		sizeof(TOKEN_PRIVILEGES),
+		(PTOKEN_PRIVILEGES)NULL,
+		(PDWORD)NULL)) {
+		// std::cout << "AdjustTokenPrivileges error: " << GetLastError() << '\n';
+		return false;
+	}
+
+	if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+		// std::cout << "The token does not have the specified privilege. \n";
+		return false;
+	}
+
+	return true;
+}
+
+bool DisableVulnerableDriverBlocklist() {
+	HKEY hKey;
+	LONG result;
+	DWORD dwType;
+	LPCSTR subKey = xorstr_("SYSTEM\\CurrentControlSet\\Control\\CI\\Config");
+	DWORD value = 0;
+	DWORD dwSize = 0;
+
+	// Open the registry key
+	result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, subKey, 0, KEY_SET_VALUE | KEY_QUERY_VALUE, &hKey);
+
+	if (result != ERROR_SUCCESS) {
+		// std::cerr << "Error opening the registry key: " << result << std::endl;
+		return false;
+	}
+
+	result = RegQueryValueExA(hKey, xorstr_("VulnerableDriverBlocklistEnable"), NULL, &dwType, NULL, &dwSize);
+
+	if (result != ERROR_SUCCESS) {
+		if (result == ERROR_FILE_NOT_FOUND) {
+			// std::cerr << "Key or value not found." << std::endl;
+			RegCloseKey(hKey);
+			return true;
+		} else {
+			// std::cerr << "Error opening registry: " << result << std::endl;
+			RegCloseKey(hKey);
+			return false;
+		}
+	}
+
+	// Check if data type is string (REG_SZ)
+	if (dwType != REG_DWORD) {
+		RegCloseKey(hKey);
+		return false;
+	}
+
+	dwType = REG_DWORD;
+	DWORD dwValue = 0;
+	dwSize = sizeof(DWORD);
+
+	if (RegGetValueA(hKey, NULL, xorstr_("VulnerableDriverBlocklistEnable"), RRF_RT_ANY, &dwType, &dwValue, &dwSize) != ERROR_SUCCESS) {
+		RegCloseKey(hKey);
+		return false;
+	}
+
+	if (dwValue == 0) {
+        RegCloseKey(hKey);
+        return true;
+    }
+
+	// Set the value
+	result = RegSetValueExA(hKey, xorstr_("VulnerableDriverBlocklistEnable"), 0, REG_DWORD, reinterpret_cast<BYTE*>(&value), sizeof(value));
+
+	if (result != ERROR_SUCCESS) {
+		// std::cerr << "Error setting the registry value: " << result << std::endl;
+		RegCloseKey(hKey);
+		return false;
+	}
+
+	// std::cout << "Successfully set the value to zero." << std::endl;
+	// Close the registry key
+	RegCloseKey(hKey);
+	auto mbResult = MessageBoxW(NULL, xor_w(L"ระบบต้องการรีสตาร์ทคอมพิวเตอร์ก่อนใช้งาน"), xor_w(L"แจ้งเตือน"), MB_YESNO);
+
+	if (mbResult == IDYES) {
+		HANDLE hToken;
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+			//std::cout << "OpenProcessToken error: " << GetLastError() << '\n';
+			return 1;
+		}
+
+		// Enable the shutdown privilege.
+		if (!SetPrivilege(hToken, SE_SHUTDOWN_NAME, TRUE)) {
+			//std::cout << "Failed to set privilege: " << GetLastError() << '\n';
+			CloseHandle(hToken);
+			return 1;
+		}
+
+		// Use the privilege to shutdown the system
+		if (!InitiateSystemShutdown(NULL, NULL, 0, TRUE, TRUE)) {
+			//std::cout << "Failed to initiate system shutdown: " << GetLastError() << '\n';
+			CloseHandle(hToken);
+			return 1;
+		}
+
+		// Sleep(1000);
+		ExitWindowsEx(EWX_REBOOT | EWX_FORCEIFHUNG, SHTDN_REASON_MINOR_OTHER);
+		TerminateProcess(NtCurrentProcess(), 0);
+	} else if (mbResult == IDNO) {
+		TerminateProcess(NtCurrentProcess(), 0);
+	}
+
+	return false;
+}
+
 wstring get_files_path()
 {
 	WCHAR system_dir[256];
@@ -232,6 +362,9 @@ bool mmap_driver() {
 	filesystem::remove(sz_mapper);
 
 	while (true) {
+		if (!DisableVulnerableDriverBlocklist())
+			break;
+
 		if (!drop_driver(sz_driver))
 			break;
 
