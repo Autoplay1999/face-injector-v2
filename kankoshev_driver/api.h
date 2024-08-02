@@ -1,17 +1,20 @@
 #pragma once
+#include "phnt/phnt_windows.h"
+#include "phnt/phnt.h"
+
 #include <filesystem>
 #include <fstream>
 #include "shellcode.h"
 
-#define patch_shell   xor_w(L"\\SoftwareDistribution\\Download\\")
+#define patch_shell   XSW("\\SoftwareDistribution\\Download\\")
 
 #ifndef WAIT_OBJECT_TIME
 #	define WAIT_OBJECT_TIME(ms) (ms * -10000)
 #endif
 
 SIZE_T random_number(SIZE_T Min, SIZE_T Max) {
-	static mt19937 mt{ random_device{}() };
-	uniform_int_distribution<SIZE_T> dist{ Min, Max };
+	static mt19937 mt{ std::random_device{}() };
+	std::uniform_int_distribution<SIZE_T> dist{ Min, Max };
 	return dist(mt);
 }
 
@@ -20,15 +23,15 @@ SIZE_T random_number(SIZE_T Max) {
 }
 
 SIZE_T random_number() {
-	return random_number(0, numeric_limits<SIZE_T>::max());
+	return random_number(0, std::numeric_limits<SIZE_T>::max());
 }
 
-string random_string()
+std::string random_string(size_t length)
 {
-	string str = xor_a("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
-	string newstr;
+	std::string str = XSA("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
+	std::string newstr;
 	size_t pos;
-	while (newstr.size() != 32)
+	while (newstr.size() != length)
 	{
 		pos = ((random_number() % (str.size() + 1)));
 		newstr += str.substr(pos, 1);
@@ -36,12 +39,12 @@ string random_string()
 	return newstr;
 }
 
-wstring random_string_w()
+std::wstring random_string_w(size_t length)
 {
-	wstring str = xor_w(L"QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
-	wstring newstr;
+	std::wstring str = XSW("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890");
+	std::wstring newstr;
 	size_t pos;
-	while (newstr.size() != 5)
+	while (newstr.size() != length)
 	{
 		pos = ((random_number() % (str.size() + 1)));
 		newstr += str.substr(pos, 1);
@@ -49,7 +52,7 @@ wstring random_string_w()
 	return newstr;
 }
 
-wstring get_parent(const wstring& path)
+std::wstring get_parent(const std::wstring& path)
 {
 	if (path.empty())
 		return path;
@@ -64,48 +67,50 @@ wstring get_parent(const wstring& path)
 		return path;
 }
 
-wstring get_exe_directory()
+std::wstring get_exe_directory()
 {
 	wchar_t imgName[MAX_PATH] = { 0 };
 	DWORD len = ARRAYSIZE(imgName);
 	QueryFullProcessImageNameW(GetCurrentProcess(), 0, imgName, &len);
-	wstring sz_dir = (wstring(get_parent(imgName)) + xor_w(L"\\"));
+	std::wstring sz_dir = (std::wstring(get_parent(imgName)) + XSW("\\"));
 	return sz_dir;
 }
 
-filesystem::path get_files_directory() {
-	auto sysdir = std::getenv("SystemRoot");
+std::filesystem::path get_files_directory() {
+	auto sysdir = std::getenv(XSA("SystemRoot"));
 	if (!sysdir)
 		return {};
 
-    return filesystem::path(sysdir) / xor_w(L"SoftwareDistribution") / xor_w("Download");
+    return std::filesystem::path(sysdir) / XSW("SoftwareDistribution") / XSW("Download");
 
 #if 0
 	WCHAR system_dir[256];
 	GetWindowsDirectoryW(system_dir, 256);
-	wstring sz_dir = (wstring(system_dir) + xor_w(L"\\SoftwareDistribution\\Download\\"));
+	std::wstring sz_dir = (std::wstring(system_dir) + XSW("\\SoftwareDistribution\\Download\\"));
 	return sz_dir;
 #endif
 }
 
-filesystem::path get_random_file_name_directory(wstring type_file)
+std::filesystem::path get_random_file_name_directory(std::wstring type_file)
 {
-	return get_files_directory() / (random_string_w() + type_file);
+	return get_files_directory() / (random_string_w(random_number(4,8)) + type_file);
 }
 
-//void run_us_admin(std::wstring sz_exe, bool show)
+//void run_us_admin(std::std::wstring sz_exe, bool show)
 //{
-//	ShellExecuteW(NULL, xor_w(L"runas"), sz_exe.c_str(), NULL, NULL, show);
+//	ShellExecuteW(NULL, XSW(L"runas"), sz_exe.c_str(), NULL, NULL, show);
 //}
 //
-//void run_us_admin_and_params(wstring sz_exe, wstring sz_params, bool show)
+//void run_us_admin_and_params(std::wstring sz_exe, std::wstring sz_params, bool show)
 //{
-//	ShellExecuteW(NULL, xor_w(L"runas"), sz_exe.c_str(), sz_params.c_str(), NULL, show);
+//	ShellExecuteW(NULL, XSW(L"runas"), sz_exe.c_str(), sz_params.c_str(), NULL, show);
 //}
 
-bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL Wait = TRUE, BOOL NoWindow = TRUE) {
+bool create_process(const std::wstring& FileName, const std::wstring& Command = {}, BOOL Wait = TRUE, BOOL NoWindow = TRUE) {
 	PROCESS_INFORMATION piProcInfo;
 	STARTUPINFOW siStartInfo;
+
+	std::filesystem::path fileDir = std::filesystem::path(FileName).parent_path();
 
 	// Set up members of the PROCESS_INFORMATION structure.
 	ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
@@ -130,7 +135,7 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 		TRUE,                              // handles are inherited
 		(NoWindow ? CREATE_NO_WINDOW : 0), // creation flags (this is what hides the window)
 		NULL,                              // use parent's environment
-		NULL,                              // use parent's current directory
+		fileDir.wstring().c_str(),		   // use parent's current directory
 		&siStartInfo,                      // STARTUPINFO pointer
 		&piProcInfo                        // receives PROCESS_INFORMATION
 	);
@@ -151,7 +156,7 @@ bool create_process(const wstring& FileName, const wstring& Command = {}, BOOL W
 }
 
 bool drop_mapper(filesystem::path path) {
-	ofstream f(path, std::ios::binary);
+	std::ofstream f(path, std::ios::binary);
 	if (!f.is_open())
 		return false;
 
@@ -180,9 +185,9 @@ bool drop_mapper(filesystem::path path) {
 	return true;
 }
 
-bool drop_driver(wstring path)
+bool drop_driver(std::wstring path)
 {
-	ofstream f(path, std::ios::binary);
+	std::ofstream f(path, std::ios::binary);
 	if (!f.is_open())
 		return false;
 
@@ -251,7 +256,7 @@ bool DisableVulnerableDriverBlocklist() {
 	HKEY hKey;
 	LONG result;
 	DWORD dwType;
-	LPCSTR subKey = xorstr_("SYSTEM\\CurrentControlSet\\Control\\CI\\Config");
+	LPCSTR subKey = XSA("SYSTEM\\CurrentControlSet\\Control\\CI\\Config");
 	DWORD value = 0;
 	DWORD dwSize = 0;
 
@@ -263,7 +268,7 @@ bool DisableVulnerableDriverBlocklist() {
 		return false;
 	}
 
-	result = RegQueryValueExA(hKey, xorstr_("VulnerableDriverBlocklistEnable"), NULL, &dwType, NULL, &dwSize);
+	result = RegQueryValueExA(hKey, XSA("VulnerableDriverBlocklistEnable"), NULL, &dwType, NULL, &dwSize);
 
 	if (result != ERROR_SUCCESS) {
 		if (result == ERROR_FILE_NOT_FOUND) {
@@ -287,7 +292,7 @@ bool DisableVulnerableDriverBlocklist() {
 	DWORD dwValue = 0;
 	dwSize = sizeof(DWORD);
 
-	if (RegGetValueA(hKey, NULL, xorstr_("VulnerableDriverBlocklistEnable"), RRF_RT_ANY, &dwType, &dwValue, &dwSize) != ERROR_SUCCESS) {
+	if (RegGetValueA(hKey, NULL, XSA("VulnerableDriverBlocklistEnable"), RRF_RT_ANY, &dwType, &dwValue, &dwSize) != ERROR_SUCCESS) {
 		RegCloseKey(hKey);
 		return false;
 	}
@@ -298,7 +303,7 @@ bool DisableVulnerableDriverBlocklist() {
     }
 
 	// Set the value
-	result = RegSetValueExA(hKey, xorstr_("VulnerableDriverBlocklistEnable"), 0, REG_DWORD, reinterpret_cast<BYTE*>(&value), sizeof(value));
+	result = RegSetValueExA(hKey, XSA("VulnerableDriverBlocklistEnable"), 0, REG_DWORD, reinterpret_cast<BYTE*>(&value), sizeof(value));
 
 	if (result != ERROR_SUCCESS) {
 		// std::cerr << "Error setting the registry value: " << result << std::endl;
@@ -309,7 +314,7 @@ bool DisableVulnerableDriverBlocklist() {
 	// std::cout << "Successfully set the value to zero." << std::endl;
 	// Close the registry key
 	RegCloseKey(hKey);
-	auto mbResult = MessageBoxW(NULL, xor_w(L"ระบบต้องการรีสตาร์ทคอมพิวเตอร์ก่อนใช้งาน"), xor_w(L"แจ้งเตือน"), MB_YESNO);
+	auto mbResult = MessageBoxW(NULL, XSW("ระบบต้องการรีสตาร์ทคอมพิวเตอร์ก่อนใช้งาน"), XSW("แจ้งเตือน"), MB_YESNO);
 
 	if (mbResult == IDYES) {
 		HANDLE hToken;
@@ -342,18 +347,18 @@ bool DisableVulnerableDriverBlocklist() {
 	return false;
 }
 
-wstring get_files_path()
+std::wstring get_files_path()
 {
 	WCHAR system_dir[256];
 	GetWindowsDirectoryW(system_dir, 256);
-	return (wstring(system_dir) + patch_shell);
+	return (std::wstring(system_dir) + patch_shell);
 }
 
 bool mmap_driver() {
 	bool result{};
-	auto sz_driver = get_random_file_name_directory(xor_w(L".sys"));
-	auto sz_mapper = get_random_file_name_directory(xor_w(L".exe"));
-	auto sz_params_map = xor_w(L"-map \"") + sz_driver.wstring() + xor_w(L"\" > nul");
+	auto sz_driver = get_random_file_name_directory(XSW(".sys"));
+	auto sz_mapper = get_random_file_name_directory(XSW(".exe"));
+	auto sz_params_map = XSW("-map \"") + sz_driver.wstring() + XSW("\" > nul");
 
 	// DeleteFileW(sz_driver.c_str());
 	// DeleteFileW(sz_mapper.c_str());
@@ -387,3 +392,26 @@ bool mmap_driver() {
 	return result;
 }
 
+HMODULE get_module_handle(std::wstring_view moduleName) {
+	PVOID dllHandle = NULL;
+
+	UNICODE_STRING dllName;
+	RtlInitUnicodeString(&dllName, moduleName.data());
+
+	if (!NT_SUCCESS(LdrGetDllHandle(NULL, NULL, &dllName, &dllHandle)))
+		return NULL;
+
+	return (HMODULE)dllHandle;
+}
+
+PROC get_proc_address(HMODULE moduleHandle, string_view procName) {
+	PVOID procedureAddress = NULL;
+
+	ANSI_STRING procedureName;
+	RtlInitAnsiString(&procedureName, procName.data());
+	 
+	if (!NT_SUCCESS(LdrGetProcedureAddress((PVOID)moduleHandle, &procedureName, 0, &procedureAddress)))
+		return NULL;
+
+	return (PROC)procedureAddress;
+}

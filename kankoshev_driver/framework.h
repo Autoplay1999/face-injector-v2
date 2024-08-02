@@ -14,6 +14,6 @@
 #include <shellapi.h>
 
 // #include "xor.h"
-#include "xorstr.h"
+#include "xorstr.hpp"
 
 using namespace std;

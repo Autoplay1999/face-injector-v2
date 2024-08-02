@@ -30,6 +30,15 @@
 #include <cstddef>
 #include <utility>
 #include <type_traits>
+ 
+#ifndef XS
+#    define _XSW(x) (PCWCH)XS(L##x)
+#    define _XS8(x) (PCCH)XS(u8##x)
+#    define XS(x) xorstr_(x)
+#    define XSA(x) (PCCH)XS(x)
+#    define XSW(x) _XSW(x)
+#    define XS8(x) _XS8(x)
+#endif
 
 #define xorstr(str) ::jm::xor_string([]() { return str; }, std::integral_constant<std::size_t, sizeof(str) / sizeof(*str)>{}, std::make_index_sequence<::jm::detail::_buffer_size<sizeof(str)>()>{})
 #define xorstr_(str) xorstr(str).crypt_get()
@@ -38,12 +47,6 @@
 #define XORSTR_FORCEINLINE __forceinline
 #else
 #define XORSTR_FORCEINLINE __attribute__((always_inline)) inline
-#endif
-
-#if defined(__clang__) || defined(__GNUC__)
-#define JM_XORSTR_LOAD_FROM_REG(x) ::jm::detail::load_from_reg(x)
-#else
-#define JM_XORSTR_LOAD_FROM_REG
 #endif
 
 namespace jm {
@@ -96,8 +99,11 @@ namespace jm {
         {
 #if defined(__clang__) || defined(__GNUC__)
             asm("" : "=r"(value) : "0"(value) :);
-#endif
             return value;
+#else
+            volatile std::uint64_t reg = value;
+            return reg;
+#endif
         }
 
     } // namespace detail
@@ -123,7 +129,7 @@ namespace jm {
 
         template<class L>
         XORSTR_FORCEINLINE xor_string(L l, std::integral_constant<std::size_t, Size>, std::index_sequence<Indices...>) noexcept
-            : _storage{ JM_XORSTR_LOAD_FROM_REG((std::integral_constant<std::uint64_t, detail::load_xored_str8<Size>(Keys, Indices, l())>::value))... }
+            : _storage{ ::jm::detail::load_from_reg((std::integral_constant<std::uint64_t, detail::load_xored_str8<Size>(Keys, Indices, l())>::value))... }
         {}
 
         XORSTR_FORCEINLINE constexpr size_type size() const noexcept
@@ -136,11 +142,11 @@ namespace jm {
             // everything is inlined by hand because a certain compiler with a certain linker is _very_ slow
 #if defined(__clang__)
             alignas(alignment)
-                std::uint64_t arr[]{ JM_XORSTR_LOAD_FROM_REG(Keys)... };
+                std::uint64_t arr[]{ ::jm::detail::load_from_reg(Keys)... };
             std::uint64_t*    keys =
-                (std::uint64_t*)JM_XORSTR_LOAD_FROM_REG((std::uint64_t)arr);
+                (std::uint64_t*)::jm::detail::load_from_reg((std::uint64_t)arr);
 #else
-            alignas(alignment) std::uint64_t keys[]{ JM_XORSTR_LOAD_FROM_REG(Keys)... };
+            alignas(alignment) std::uint64_t keys[]{ ::jm::detail::load_from_reg(Keys)... };
 #endif
 
 #if defined(_M_ARM64) || defined(__aarch64__) || defined(_M_ARM) || defined(__arm__)
@@ -191,11 +197,11 @@ namespace jm {
             // crypt() is inlined by hand because a certain compiler with a certain linker is _very_ slow
 #if defined(__clang__)
             alignas(alignment)
-                std::uint64_t arr[]{ JM_XORSTR_LOAD_FROM_REG(Keys)... };
+                std::uint64_t arr[]{ ::jm::detail::load_from_reg(Keys)... };
             std::uint64_t*    keys =
-                (std::uint64_t*)JM_XORSTR_LOAD_FROM_REG((std::uint64_t)arr);
+                (std::uint64_t*)::jm::detail::load_from_reg((std::uint64_t)arr);
 #else
-            alignas(alignment) std::uint64_t keys[]{ JM_XORSTR_LOAD_FROM_REG(Keys)... };
+            alignas(alignment) std::uint64_t keys[]{ ::jm::detail::load_from_reg(Keys)... };
 #endif
 
 #if defined(_M_ARM64) || defined(__aarch64__) || defined(_M_ARM) || defined(__arm__)

@@ -33,7 +33,7 @@
     <ClInclude Include="api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="xorstr.h">
+    <ClInclude Include="xorstr.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

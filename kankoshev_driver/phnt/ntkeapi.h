@@ -1,21 +1,7 @@
 /*
- * Process Hacker -
- *   Kernel executive support library
+ * Kernel executive support library
  *
- * This file is part of Process Hacker.
- *
- * Process Hacker is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Process Hacker is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Process Hacker.  If not, see <http://www.gnu.org/licenses/>.
+ * This file is part of System Informer.
  */
 
 #ifndef _NTKEAPI_H
@@ -46,17 +32,17 @@ typedef enum _KTHREAD_STATE
 // private
 typedef enum _KHETERO_CPU_POLICY
 {
-    KHeteroCpuPolicyAll,
-    KHeteroCpuPolicyLarge,
-    KHeteroCpuPolicyLargeOrIdle,
-    KHeteroCpuPolicySmall,
-    KHeteroCpuPolicySmallOrIdle,
-    KHeteroCpuPolicyDynamic,
-    KHeteroCpuPolicyStaticMax,
-    KHeteroCpuPolicyBiasedSmall,
-    KHeteroCpuPolicyBiasedLarge,
-    KHeteroCpuPolicyDefault,
-    KHeteroCpuPolicyMax
+    KHeteroCpuPolicyAll = 0,
+    KHeteroCpuPolicyLarge = 1,
+    KHeteroCpuPolicyLargeOrIdle = 2,
+    KHeteroCpuPolicySmall = 3,
+    KHeteroCpuPolicySmallOrIdle = 4,
+    KHeteroCpuPolicyDynamic = 5,
+    KHeteroCpuPolicyStaticMax = 5, // valid
+    KHeteroCpuPolicyBiasedSmall = 6,
+    KHeteroCpuPolicyBiasedLarge = 7,
+    KHeteroCpuPolicyDefault = 8,
+    KHeteroCpuPolicyMax = 9
 } KHETERO_CPU_POLICY, *PKHETERO_CPU_POLICY;
 
 #if (PHNT_MODE != PHNT_MODE_KERNEL)
@@ -102,6 +88,9 @@ typedef enum _KWAIT_REASON
     WrRundown,
     WrAlertByThreadId,
     WrDeferredPreempt,
+    WrPhysicalFault,
+    WrIoRing,
+    WrMdlCache,
     MaximumWaitReason
 } KWAIT_REASON, *PKWAIT_REASON;
 
@@ -149,7 +138,7 @@ NtCallbackReturn(
 
 #if (PHNT_VERSION >= PHNT_VISTA)
 NTSYSCALLAPI
-VOID
+NTSTATUS
 NTAPI
 NtFlushProcessWriteBuffers(
     VOID

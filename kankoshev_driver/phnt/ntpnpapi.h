@@ -1,21 +1,7 @@
 /*
- * Process Hacker -
- *   Plug and Play support functions
+ * Plug and Play support functions
  *
- * This file is part of Process Hacker.
- *
- * Process Hacker is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Process Hacker is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Process Hacker.  If not, see <http://www.gnu.org/licenses/>.
+ * This file is part of System Informer.
  */
 
 #ifndef _NTPNPAPI_H
@@ -118,6 +104,48 @@ typedef enum _PLUGPLAY_CONTROL_CLASS
     PlugPlayControlGetDeviceInterfaceEnabled, // PLUGPLAY_CONTROL_DEVICE_INTERFACE_ENABLED
     MaxPlugPlayControl
 } PLUGPLAY_CONTROL_CLASS, *PPLUGPLAY_CONTROL_CLASS;
+
+// pub
+typedef enum _DEVICE_RELATION_TYPE
+{
+    BusRelations,
+    EjectionRelations,
+    PowerRelations,
+    RemovalRelations,
+    TargetDeviceRelation,
+    SingleBusRelations,
+    TransportRelations
+} DEVICE_RELATION_TYPE, *PDEVICE_RELATION_TYPE;
+
+// pub
+typedef enum _BUS_QUERY_ID_TYPE
+{
+    BusQueryDeviceID = 0,           // <Enumerator>\<Enumerator-specific device id>
+    BusQueryHardwareIDs = 1,        // Hardware ids
+    BusQueryCompatibleIDs = 2,      // compatible device ids
+    BusQueryInstanceID = 3,         // persistent id for this instance of the device
+    BusQueryDeviceSerialNumber = 4, // serial number for this device
+    BusQueryContainerID = 5         // unique id of the device's physical container
+} BUS_QUERY_ID_TYPE, *PBUS_QUERY_ID_TYPE;
+
+// pub
+typedef enum _DEVICE_TEXT_TYPE
+{
+    DeviceTextDescription = 0,        // DeviceDesc property
+    DeviceTextLocationInformation = 1 // DeviceLocation property
+} DEVICE_TEXT_TYPE, *PDEVICE_TEXT_TYPE;
+
+// pub
+typedef enum _DEVICE_USAGE_NOTIFICATION_TYPE
+{
+    DeviceUsageTypeUndefined,
+    DeviceUsageTypePaging,
+    DeviceUsageTypeHibernation,
+    DeviceUsageTypeDumpFile,
+    DeviceUsageTypeBoot,
+    DeviceUsageTypePostDisplay,
+    DeviceUsageTypeGuestAssigned
+} DEVICE_USAGE_NOTIFICATION_TYPE, *PDEVICE_USAGE_NOTIFICATION_TYPE;
 
 #if (PHNT_VERSION < PHNT_WIN8)
 NTSYSCALLAPI

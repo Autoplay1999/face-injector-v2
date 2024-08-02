@@ -1,21 +1,7 @@
 /*
- * Process Hacker -
- *   Win32 definition support
+ * Win32 definition support
  *
- * This file is part of Process Hacker.
- *
- * Process Hacker is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Process Hacker is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Process Hacker.  If not, see <http://www.gnu.org/licenses/>.
+ * This file is part of System Informer.
  */
 
 #ifndef _PHNT_WINDOWS_H
@@ -33,6 +19,30 @@
 #endif
 #endif
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
+#ifndef INT_ERROR
+#define INT_ERROR (-1)
+#endif
+
+#ifndef ULONG64_MAX
+#define ULONG64_MAX 0xffffffffffffffffui64
+#endif
+
+#ifndef SIZE_T_MAX
+#ifdef _WIN64
+#define SIZE_T_MAX 0xffffffffffffffffui64
+#else
+#define SIZE_T_MAX 0xffffffffUL
+#endif
+#endif
+
+#ifndef ENABLE_RTL_NUMBER_OF_V2
+#define ENABLE_RTL_NUMBER_OF_V2
+#endif
+
 #ifndef INITGUID
 #define INITGUID
 #endif
@@ -43,6 +53,13 @@
 
 #ifndef WIN32_NO_STATUS
 #define WIN32_NO_STATUS
+#endif
+
+#ifndef __cplusplus
+// This is needed to workaround C17 preprocessor errors when using legacy versions of the Windows SDK. (dmex)
+#ifndef MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS
+#define MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS 0
+#endif
 #endif
 
 #include <windows.h>
@@ -90,5 +107,21 @@ typedef GUID *PGUID;
     (WMIGUID_EXECUTE | TRACELOG_GUID_ENABLE | TRACELOG_LOG_EVENT | \
     TRACELOG_ACCESS_REALTIME | TRACELOG_REGISTER_GUIDS | \
     STANDARD_RIGHTS_EXECUTE)
+
+// Note: Some parts of the Windows Runtime, COM or third party hooks are returning
+// S_FALSE and null pointers on errors when S_FALSE is a success code. (dmex)
+#define HR_SUCCESS(hr) (((HRESULT)(hr)) == S_OK)
+#define HR_FAILED(hr) (((HRESULT)(hr)) != S_OK)
+
+// Note: The CONTAINING_RECORD macro doesn't support UBSan and generates false positives,
+// we redefine the macro with FIELD_OFFSET as a workaround until the WinSDK is fixed (dmex)
+#undef CONTAINING_RECORD
+#define CONTAINING_RECORD(address, type, field) \
+    ((type *)((ULONG_PTR)(address) - UFIELD_OFFSET(type, field)))
+
+#ifndef __PCGUID_DEFINED__
+#define __PCGUID_DEFINED__
+typedef const GUID* PCGUID;
+#endif
 
 #endif

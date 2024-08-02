@@ -4,19 +4,19 @@
 #pragma comment(lib, "Advapi32.lib")
 #include <Windows.h>
 
-#ifndef R
-#   define R kankoshev::driver::Read
-#   define R_ kankoshev::driver::Read_
+#ifndef DRV_R
+#   define DRV_R kankoshev::driver::Read
+#   define DRV_R_ kankoshev::driver::Read_
 #endif
 
-#ifndef W
-#   define W kankoshev::driver::Write
-#   define W_ kankoshev::driver::Write_
+#ifndef DRV_W
+#   define DRV_W kankoshev::driver::Write
+#   define DRV_W_ kankoshev::driver::Write_
 #endif
 
-#ifndef WP
-#   define WP kankoshev::driver::WriteProtect
-#   define WP_ kankoshev::driver::WriteProtect_
+#ifndef DRV_WP
+#   define DRV_WP kankoshev::driver::WriteProtect
+#   define DRV_WP_ kankoshev::driver::WriteProtect_
 #endif
 
 #ifndef NT_SUCCESS

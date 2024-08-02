@@ -5,13 +5,36 @@
 
 #define DVR_DEVICE_FILE xor_w(L"\\\\.\\EIQDV") 
 
+typedef NTSTATUS (NTAPI*NtDeviceIoControlFile_Fn)(
+    _In_ HANDLE FileHandle,
+    _In_opt_ HANDLE Event,
+    _In_opt_ PIO_APC_ROUTINE ApcRoutine,
+    _In_opt_ PVOID ApcContext,
+    _Out_ PIO_STATUS_BLOCK IoStatusBlock,
+    _In_ ULONG IoControlCode,
+    _In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer,
+    _In_ ULONG InputBufferLength,
+    _Out_writes_bytes_opt_(OutputBufferLength) PVOID OutputBuffer,
+    _In_ ULONG OutputBufferLength
+);
+
 namespace kankoshev {
     namespace driver {
         Driver* gDriver;
     }
+        
+    static NtDeviceIoControlFile_Fn gNtDeviceIoControlFile;
 
     Driver::Driver() : mDriverHandle(INVALID_HANDLE_VALUE), mProcessId() {
         driver::gDriver = this;
+
+        auto ntdllBase = get_module_handle(XSW("ntdll.dll"));
+        auto NtDeviceIoControlFile = (NtDeviceIoControlFile_Fn)get_proc_address(ntdllBase, XSA("NtDeviceIoControlFile"));
+
+        if (NULL == NtDeviceIoControlFile)
+            throw std::exception(XSA("'NtDeviceIoControlFile' GetProcAddress Fail"));
+
+        gNtDeviceIoControlFile = (NtDeviceIoControlFile_Fn)RtlEncodePointer(NtDeviceIoControlFile);
     }
 
     Driver::~Driver() {
@@ -26,11 +49,24 @@ namespace kankoshev {
     }
 
     NTSTATUS Driver::SendSerivce(ULONG ioctl_code, LPVOID io, DWORD size) {
+#if 0
         if (!IsLoaded())
             return STATUS_DEVICE_DOES_NOT_EXIST;
 
         if (!DeviceIoControl(mDriverHandle, ioctl_code, io, size, nullptr, 0, NULL, NULL))
             return STATUS_UNSUCCESSFUL;
+#else
+        IO_STATUS_BLOCK ioStatus;
+        NtDeviceIoControlFile_Fn ntDeviceIoControlFile;
+
+        if (!IsLoaded())
+            return STATUS_DEVICE_DOES_NOT_EXIST;
+
+        ntDeviceIoControlFile = (NtDeviceIoControlFile_Fn)RtlDecodePointer(gNtDeviceIoControlFile);
+
+        if (!NT_SUCCESS(ntDeviceIoControlFile(mDriverHandle, NULL, NULL, NULL, &ioStatus, ioctl_code, io, size, nullptr, 0)))
+            return STATUS_UNSUCCESSFUL;
+#endif
 
         return STATUS_SUCCESS;
     }
@@ -40,15 +76,19 @@ namespace kankoshev {
     }
 
     NTSTATUS Driver::GetModuleInformationEx(PCWSTR name, PGET_MODULE_INFORMATION mod) {
+        IO_STATUS_BLOCK ioStatus;
+        NtDeviceIoControlFile_Fn ntDeviceIoControlFile;
+
         if (mDriverHandle == INVALID_HANDLE_VALUE)
             return STATUS_DEVICE_DOES_NOT_EXIST;
     
+        ntDeviceIoControlFile = (NtDeviceIoControlFile_Fn)RtlDecodePointer(gNtDeviceIoControlFile);
         SET_MODULE_INFORMATION req = {};
 
         req.pid = mProcessId;
         StringCchCopyW(req.sz_name, sizeof(req.sz_name), name);
 
-        if (!DeviceIoControl(mDriverHandle, IOCTL_GET_MODULE_INFORMATION, &req, sizeof(req), mod, sizeof(GET_MODULE_INFORMATION), 0, NULL))
+        if (!NT_SUCCESS(ntDeviceIoControlFile(mDriverHandle, NULL, NULL, NULL, &ioStatus, IOCTL_GET_MODULE_INFORMATION, &req, sizeof(req), mod, sizeof(GET_MODULE_INFORMATION))))
             return STATUS_UNSUCCESSFUL;
 
         return STATUS_SUCCESS;
@@ -135,7 +175,7 @@ namespace kankoshev {
 
         if (!instance)
             if (!(instance = shared_ptr<Driver>(new Driver())))
-                throw exception(xor_a("'Driver' CreateInstance Fail"));
+                throw exception(XSA("'Driver' CreateInstance Fail"));
 
         return *instance;
     }
